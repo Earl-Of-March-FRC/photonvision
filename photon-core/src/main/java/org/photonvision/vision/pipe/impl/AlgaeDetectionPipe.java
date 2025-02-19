@@ -67,11 +67,11 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
         }
 
         public double getXAngle() {
-            return computation.calculateHorizontalAngle(mat, algaeCenter.x, 45.7);
+            return computation.calculateHorizontalAngle(mat, algaeCenter.x, 0);
         }
 
         public double getYAngle() {
-            return computation.calculateVerticalAngle(mat, algaeCenter.y, 65);
+            return computation.calculateVerticalAngle(mat, algaeCenter.y, 0);
         }
 
         public Contour geContour() {
@@ -263,7 +263,7 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
                 double screenCenterY = frame.height() / 2;
 
                 // Adjust the object center x-coordinate based on camera offset
-                objectCenterX -= cameraOffset; // offset in mm
+                // objectCenterX -= cameraOffset; // offset in mm
 
                 Mat matInverted = new Mat();
                 Core.invert(CAMERA_MATRIX, matInverted);
@@ -303,7 +303,7 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
                 double screenCenterY = frame.height() / 2;
 
                 // Adjust the object center y-coordinate based on camera offset
-                objectCenterY -= cameraOffset; // offset in mm
+                // objectCenterY -= cameraOffset; // offset in mm
 
                 Mat matInverted = new Mat();
                 Core.invert(CAMERA_MATRIX, matInverted); // Invert camera matrix
