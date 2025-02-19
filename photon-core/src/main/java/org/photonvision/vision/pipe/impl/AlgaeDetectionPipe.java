@@ -1,3 +1,4 @@
+// TODO: Make a blur pipe, pipe the org image to the hsv pipe and pip that to algae. Keep in mind unit conversions 
 package org.photonvision.vision.pipe.impl;
 
 import java.util.List;
@@ -254,7 +255,7 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
         }
 
         public double calculateDistance(double detectionWidth) {
-            return ((objectRealWidth * focalLengthX) / detectionWidth) - 20; // mm
+            return (((objectRealWidth * focalLengthX) / detectionWidth) - 20) / 100; // m
         }
 
         public double calculateHorizontalAngle(Mat frame, double objectCenterX, double cameraOffset) {
