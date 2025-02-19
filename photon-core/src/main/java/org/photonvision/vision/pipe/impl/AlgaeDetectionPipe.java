@@ -43,8 +43,8 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
 
     public AlgaeDetectionPipe() {
         super();
-        CAMERA_MATRIX.put(0, 0, 1413.70008, 0, 314.24724784);
-        CAMERA_MATRIX.put(1, 0, 0, 1437.31, 240.10474105);
+        CAMERA_MATRIX.put(0, 0, 1413.70008, 0, 672.90);
+        CAMERA_MATRIX.put(1, 0, 0, 1437.31, 415.13);
         CAMERA_MATRIX.put(2, 0, 0, 0, 1);
 
         detector = new ObjectDetection(LOWER_BALL, UPPER_BALL, MIN_AREA, MIN_CIRCULARITY);
