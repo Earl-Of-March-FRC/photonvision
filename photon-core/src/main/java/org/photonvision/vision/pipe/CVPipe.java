@@ -17,6 +17,10 @@
 
 package org.photonvision.vision.pipe;
 
+import java.util.List;
+
+import org.photonvision.vision.opencv.Contour;
+
 /**
  * Defines a pipe. A pipe is a single step in a pipeline. This class is to be extended, never used
  * on its own.
@@ -44,7 +48,7 @@ public abstract class CVPipe<I, O, P> {
      * @return Result of processing.
      */
     protected abstract O process(I in);
-
+    
     /**
      * @param in Input for pipe processing.
      * @return Result of processing.
@@ -55,6 +59,7 @@ public abstract class CVPipe<I, O, P> {
         result.nanosElapsed = System.nanoTime() - pipeStartNanos;
         return result;
     }
+
 
     public static class CVPipeResult<O> {
         public O output;

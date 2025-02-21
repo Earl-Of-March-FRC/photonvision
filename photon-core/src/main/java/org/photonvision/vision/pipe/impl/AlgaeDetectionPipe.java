@@ -1,9 +1,12 @@
-// TODO: Make a blur pipe, pipe the org image to the hsv pipe and pip that to algae. Keep in mind unit conversions 
+// TODO: Make a blur pipe, pipe the org image to the hsv pipe and pip that to algae. Keep in mind unit conversions
+
 package org.photonvision.vision.pipe.impl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -23,13 +26,13 @@ import org.photonvision.vision.pipe.CVPipe;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 
-public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.AlgaePose>, AlgaeDetectionPipe.AlgaeDetectionParams> {
+public class AlgaeDetectionPipe extends CVPipe<Pair<Mat, List<Contour>>, List<AlgaeDetectionPipe.AlgaePose>, AlgaeDetectionPipe.AlgaeDetectionParams> {
 
     // Constants
     private static final double KNOWN_DIAMETER = 475.00; // mm
 
-    private static final Scalar LOWER_BALL = new Scalar(80, 50, 60); // HSV lower-bound
-    private static final Scalar UPPER_BALL = new Scalar(100, 255, 255); // HSV upper-bound
+    // private static final Scalar LOWER_BALL = new Scalar(80, 50, 60); // HSV lower-bound
+    // private static final Scalar UPPER_BALL = new Scalar(100, 255, 255); // HSV upper-bound
 
     // Contour Conditionals
     private static final int MIN_AREA = 3000;
@@ -40,15 +43,20 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
     private static final Mat CAMERA_MATRIX = new Mat(3, 3, CvType.CV_64F);
 
     private final ObjectDetection detector;
-    private final Computation computation; 
+    private final Computation computation;
+    
+  
 
     public AlgaeDetectionPipe() {
         super();
+        
+        // Camera matrix
         CAMERA_MATRIX.put(0, 0, 1413.70008, 0, 672.90);
         CAMERA_MATRIX.put(1, 0, 0, 1437.31, 415.13);
         CAMERA_MATRIX.put(2, 0, 0, 0, 1);
-
-        detector = new ObjectDetection(LOWER_BALL, UPPER_BALL, MIN_AREA, MIN_CIRCULARITY);
+        
+        // Algae Pipes
+        detector = new ObjectDetection(MIN_AREA, MIN_CIRCULARITY);
         computation = new Computation(CAMERA_MATRIX.get(0,0)[0], KNOWN_DIAMETER, CAMERA_MATRIX);
     }
 
@@ -92,9 +100,11 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
     }
 
     @Override
-    protected List<AlgaePose> process(Mat in) {
-        Mat outputMat = in.clone();
-        Optional<AlgaeResult> result = detector.findLargestAlgae(outputMat);
+    protected List<AlgaePose> process(Pair<Mat, List<Contour>> in) {
+        var contours = in.getRight();
+        var mat = in.getLeft();
+        // Mat outputMat = in.clone();
+        Optional<AlgaeResult> result = detector.findLargestAlgae(contours);
         if (result.isPresent()) {
             Point algaeCenter = result.get().getCenter();
             double algaeRadius = result.get().getRadius();
@@ -115,7 +125,7 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
             int unpaddedX = (int) algaeCenter.x - PADDING;
             int unpaddedY = (int) algaeCenter.y - PADDING;
             // Imgproc.circle(outputMat, new Point(unpaddedX, unpaddedY), (int) algaeRadius, new Scalar(255, 0, 255), 5);
-            return List.of(new AlgaePose(new Point(unpaddedX, unpaddedY), algaeRadius, in));
+            return List.of(new AlgaePose(new Point(unpaddedX, unpaddedY), algaeRadius, in.getLeft()));
         }
         return List.of();
     }
@@ -124,20 +134,15 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
     }
 
     public static class AlgaeResult {
-        private Mat image;
         private Point center;
         private double radius;
     
-        public AlgaeResult(Mat image, Point center, double radius) {
-            this.image = image;
+        public AlgaeResult(Point center, double radius) {
             this.center = center;
             this.radius = radius;
         }
     
-        public Mat getImage() {
-            return image;
-        }
-    
+
         public Point getCenter() {
             return center;
         }
@@ -148,57 +153,19 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
     }
 
     public static class ObjectDetection {
-        private Scalar lowerBound;
-        private Scalar upperBound;
         private int minArea;
         private double minCircularity;
 
-        public ObjectDetection(Scalar lowerBound, Scalar upperBound, int minArea, double minCircularity) {
-            this.lowerBound = lowerBound;
-            this.upperBound = upperBound;
+        public ObjectDetection( int minArea, double minCircularity) {
             this.minArea = minArea;
             this.minCircularity = minCircularity;
         }
 
-        public Optional<AlgaeResult> findLargestAlgae(Mat image) {
+        public Optional<AlgaeResult> findLargestAlgae(List<Contour> contoursList) {
 
-            // Create a padded version of the image to handle partial objects near the
-            // borders
-            Mat paddedImage = new Mat();
-            Core.copyMakeBorder(image, paddedImage, PADDING, PADDING, PADDING, PADDING, Core.BORDER_CONSTANT,
-                    new Scalar(0, 0, 0));
-
-            // Convert to HSV
-            Mat hsv = new Mat();
-            Imgproc.cvtColor(paddedImage, hsv, Imgproc.COLOR_BGR2HSV);
-
-            // Apply Gaussian Blur
-            Mat blurred = new Mat();
-            Imgproc.GaussianBlur(hsv, blurred, new Size(9, 9), 0);
-
-            // Create a mask for the algae color
-            Mat mask = new Mat();
-            Core.inRange(blurred, lowerBound, upperBound, mask);
-
-            // Morphological operations
-            Imgproc.erode(mask, mask, new Mat(), new Point(-1, -1), 2);
-            Imgproc.dilate(mask, mask, new Mat(), new Point(-1, -1), 2);
-
-            // Canny edge detection
-            Mat edges = new Mat();
-            Imgproc.Canny(mask, edges, 100, 300);
-
-            // Dilate the edges to connect broken parts
-            Mat dilatedEdges = new Mat();
-            Imgproc.dilate(edges, dilatedEdges, new Mat(), new Point(-1, -1), 3);
-
-            // Further dilation to fill the edges
-            Mat filledEdges = new Mat();
-            Imgproc.dilate(dilatedEdges, filledEdges, new Mat(), new Point(-1, -1), 3);
-
-            // Find contours
-            java.util.List<MatOfPoint> contours = new java.util.ArrayList<>();
-            Imgproc.findContours(filledEdges, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+            List<MatOfPoint> contours = contoursList.stream()
+            .map(contour -> contour.mat)  // Extract the MatOfPoint from each Contour
+            .collect(Collectors.toList());  // Collect into a List<MatOfPoint>
 
             // Variables to store the largest algae
             Point largestBallCenter = null;
@@ -237,7 +204,7 @@ public class AlgaeDetectionPipe extends CVPipe<Mat, List<AlgaeDetectionPipe.Alga
             if (largestBallCenter == null) {
                 return Optional.empty();
             }
-            return Optional.of(new AlgaeResult(image, largestBallCenter, largestRadius));
+            return Optional.of(new AlgaeResult(largestBallCenter, largestRadius));
 
         }
     }
