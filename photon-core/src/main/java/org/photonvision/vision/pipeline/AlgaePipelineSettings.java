@@ -19,7 +19,6 @@ package org.photonvision.vision.pipeline;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.Objects;
-
 import org.photonvision.common.util.numbers.IntegerCouple;
 
 @JsonTypeName("AlgaePipelineSettings")
@@ -40,12 +39,9 @@ public class AlgaePipelineSettings extends AdvancedPipelineSettings {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        if (!super.equals(o))
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
         AlgaePipelineSettings that = (AlgaePipelineSettings) o;
         return Objects.equals(circularity, that.circularity)
                 && padding == that.padding

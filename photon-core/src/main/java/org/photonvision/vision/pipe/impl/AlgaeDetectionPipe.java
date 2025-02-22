@@ -37,7 +37,10 @@ import org.photonvision.vision.opencv.Contour;
 import org.photonvision.vision.pipe.CVPipe;
 
 public class AlgaeDetectionPipe
-        extends CVPipe<List<Contour>, List<AlgaeDetectionPipe.AlgaeResult>, AlgaeDetectionPipe.AlgaeDetectionParams> {
+        extends CVPipe<
+                List<Contour>,
+                List<AlgaeDetectionPipe.AlgaeResult>,
+                AlgaeDetectionPipe.AlgaeDetectionParams> {
     // // Constants
     // private static final double KNOWN_DIAMETER = 475.00; // mm
 
@@ -54,8 +57,13 @@ public class AlgaeDetectionPipe
     public void setParams(AlgaeDetectionParams params) {
         super.setParams(params);
 
-        detector = new ObjectDetection(params.getFrameProperties().imageArea, params.getMinArea(), params.getMaxArea(),
-                params.getMinCircularity(), params.getMaxCircularity());
+        detector =
+                new ObjectDetection(
+                        params.getFrameProperties().imageArea,
+                        params.getMinArea(),
+                        params.getMaxArea(),
+                        params.getMinCircularity(),
+                        params.getMaxCircularity());
 
         if (params.getCameraCalibration() != null) {
             for (int i = 0; i < CAMERA_MATRIX.rows(); i++) {
@@ -183,13 +191,15 @@ public class AlgaeDetectionPipe
         }
 
         public Transform3d getCameraToAlgaeTransform() {
-            double xTranslation = getDistance()
-                    * Math.cos(Math.toRadians(getYAngle()))
-                    * Math.cos(Math.toRadians(getXAngle()));
-            double yTranslation = -1
-                    * getDistance()
-                    * Math.cos(Math.toRadians(getYAngle()))
-                    * Math.sin(Math.toRadians(getXAngle()));
+            double xTranslation =
+                    getDistance()
+                            * Math.cos(Math.toRadians(getYAngle()))
+                            * Math.cos(Math.toRadians(getXAngle()));
+            double yTranslation =
+                    -1
+                            * getDistance()
+                            * Math.cos(Math.toRadians(getYAngle()))
+                            * Math.sin(Math.toRadians(getXAngle()));
             double zTranslation = getDistance() * Math.sin(Math.toRadians(getYAngle()));
             return new Transform3d(xTranslation, yTranslation, zTranslation, new Rotation3d());
         }
@@ -202,7 +212,11 @@ public class AlgaeDetectionPipe
         private double minCircularity;
         private double maxCircularity;
 
-        public ObjectDetection(double totalImageArea, double minArea, double maxArea, double minCircularity,
+        public ObjectDetection(
+                double totalImageArea,
+                double minArea,
+                double maxArea,
+                double minCircularity,
                 double maxCircularity) {
             this.totalImageArea = totalImageArea;
             this.minArea = minArea;
@@ -212,9 +226,10 @@ public class AlgaeDetectionPipe
         }
 
         public Optional<AlgaeResult> findLargestAlgae(List<Contour> contoursList) {
-            List<MatOfPoint> contours = contoursList.stream()
-                    .map(contour -> contour.mat) // Extract the MatOfPoint from each Contour
-                    .collect(Collectors.toList()); // Collect into a List<MatOfPoint>
+            List<MatOfPoint> contours =
+                    contoursList.stream()
+                            .map(contour -> contour.mat) // Extract the MatOfPoint from each Contour
+                            .collect(Collectors.toList()); // Collect into a List<MatOfPoint>
 
             // Variables to store the largest algae
             Point largestBallCenter = null;
@@ -229,12 +244,15 @@ public class AlgaeDetectionPipe
                 MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
 
                 double perimeter = Imgproc.arcLength(contour2f, true);
-                double circularity = (perimeter > 0) ? (4 * Math.PI * area / (perimeter * perimeter)) * 100 : -1;
+                double circularity =
+                        (perimeter > 0) ? (4 * Math.PI * area / (perimeter * perimeter)) * 100 : -1;
 
                 // area percentage
                 double areaPercentage = area / totalImageArea * 100;
 
-                if (areaPercentage >= minArea && areaPercentage <= maxArea && circularity >= minCircularity
+                if (areaPercentage >= minArea
+                        && areaPercentage <= maxArea
+                        && circularity >= minCircularity
                         && circularity <= maxCircularity) {
                     // Approximate the contour to a circle
                     RotatedRect minEnclosingCircle = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
