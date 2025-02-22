@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) Photon Vision.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package org.photonvision.vision.pipe.impl;
 
 import org.opencv.core.Mat;
@@ -6,7 +23,6 @@ import org.opencv.imgproc.Imgproc;
 import org.photonvision.vision.pipe.CVPipe;
 
 public class EdgeMaskPipe extends CVPipe<Mat, Mat, EdgeMaskPipe.MaskParams> {
-
     @Override
     protected Mat process(Mat inputMask) {
         // Apply morphological transformations to clean up the mask
@@ -39,11 +55,17 @@ public class EdgeMaskPipe extends CVPipe<Mat, Mat, EdgeMaskPipe.MaskParams> {
     private Mat dilateEdges(Mat edges) {
         // Dilate the edges to fill gaps and connect broken parts
         Mat dilatedEdges = new Mat();
-        Imgproc.dilate(edges, dilatedEdges, new Mat(), new Point(-1, -1), params.getEdgeDilationIterations());
+        Imgproc.dilate(
+                edges, dilatedEdges, new Mat(), new Point(-1, -1), params.getEdgeDilationIterations());
 
         // Further dilation to ensure continuity of the edges
         Mat filledEdges = new Mat();
-        Imgproc.dilate(dilatedEdges, filledEdges, new Mat(), new Point(-1, -1), params.getFinalDilationIterations());
+        Imgproc.dilate(
+                dilatedEdges,
+                filledEdges,
+                new Mat(),
+                new Point(-1, -1),
+                params.getFinalDilationIterations());
 
         return filledEdges;
     }
@@ -58,7 +80,13 @@ public class EdgeMaskPipe extends CVPipe<Mat, Mat, EdgeMaskPipe.MaskParams> {
         private final int finalDilationIterations;
 
         // Constructor for setting the iterations
-        public MaskParams(int erosion, int initialDilate, int edgeLow, int edgeHigh, int edgeDilate, int finalDilate) {
+        public MaskParams(
+                int erosion,
+                int initialDilate,
+                int edgeLow,
+                int edgeHigh,
+                int edgeDilate,
+                int finalDilate) {
             this.erosionIterations = erosion;
             this.initialDilationIterations = initialDilate;
             this.edgeThresholdLow = edgeLow;
