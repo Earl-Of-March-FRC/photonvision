@@ -6,19 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect2d;
 import org.opencv.core.RotatedRect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.photonvision.vision.calibration.CameraCalibrationCoefficients;
 import org.photonvision.vision.opencv.CVShape;
 import org.photonvision.vision.opencv.Contour;
 import org.photonvision.vision.pipe.CVPipe;
@@ -26,112 +22,80 @@ import org.photonvision.vision.pipe.CVPipe;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 
-public class AlgaeDetectionPipe extends CVPipe<Pair<Mat, List<Contour>>, List<AlgaeDetectionPipe.AlgaePose>, AlgaeDetectionPipe.AlgaeDetectionParams> {
+public class AlgaeDetectionPipe extends CVPipe<List<Contour>, List<AlgaeDetectionPipe.AlgaeResult>, AlgaeDetectionPipe.AlgaeDetectionParams> {
+    // // Constants
+    // private static final double KNOWN_DIAMETER = 475.00; // mm
 
-    // Constants
-    private static final double KNOWN_DIAMETER = 475.00; // mm
-
-    // private static final Scalar LOWER_BALL = new Scalar(80, 50, 60); // HSV lower-bound
-    // private static final Scalar UPPER_BALL = new Scalar(100, 255, 255); // HSV upper-bound
-
-    // Contour Conditionals
-    private static final int MIN_AREA = 3000;
-    private static final double MIN_CIRCULARITY = 0.3;
-
-    private static final int PADDING = 50;
+    // // Contour Conditionals
+    // private static final int MIN_AREA = 3000;
+    // private static final double MIN_CIRCULARITY = 0.3;
 
     private static final Mat CAMERA_MATRIX = new Mat(3, 3, CvType.CV_64F);
 
-    private final ObjectDetection detector;
-    private final Computation computation;
-    
-  
+    private ObjectDetection detector;
+    private ScreenToWorldConverter converter;
 
-    public AlgaeDetectionPipe() {
-        super();
-        
-        // Camera matrix
-        CAMERA_MATRIX.put(0, 0, 1413.70008, 0, 672.90);
-        CAMERA_MATRIX.put(1, 0, 0, 1437.31, 415.13);
-        CAMERA_MATRIX.put(2, 0, 0, 0, 1);
-        
+    @Override
+    public void setParams(AlgaeDetectionParams params) {
+        super.setParams(params);
+    
         // Algae Pipes
-        detector = new ObjectDetection(MIN_AREA, MIN_CIRCULARITY);
-        computation = new Computation(CAMERA_MATRIX.get(0,0)[0], KNOWN_DIAMETER, CAMERA_MATRIX);
+        detector = new ObjectDetection(params.getMinArea(), params.getMinCircularity());
+        
+        if (params.getCameraCalibration() != null) {
+            for (int i = 0; i < CAMERA_MATRIX.rows(); i++) {
+                for (int j = 0; j < CAMERA_MATRIX.cols(); j++) {
+                    CAMERA_MATRIX.put(i, j, params.getCameraCalibration().getIntrinsicsArr()[i * CAMERA_MATRIX.cols() + j]);
+                }
+            }
+        }
+
+        converter = new ScreenToWorldConverter(params.getDiameter(), CAMERA_MATRIX);
     }
 
-    public class AlgaePose {
-        private Point algaeCenter;
-        private double algaeRadius;
-        private Mat mat;
+    public static class AlgaeDetectionParams {
+        private final double diameter_mm;
+        private final int min_area;
+        private final double min_circularity;
+        private final CameraCalibrationCoefficients cameraCalibration;
 
-        public AlgaePose(Point algaeCenter, double algaeRadius, Mat in) {
-            this.algaeCenter = algaeCenter;
-            this.algaeRadius = algaeRadius;
-            this.mat = in;
+        public AlgaeDetectionParams(double diameter_mm, int min_area, double min_circularity, CameraCalibrationCoefficients cameraCalibration) {
+            this.diameter_mm = diameter_mm;
+            this.min_area = min_area;
+            this.min_circularity = min_circularity;
+            this.cameraCalibration = cameraCalibration;
         }
 
-        public double getDistance() {
-            return (computation.calculateDistance(algaeRadius * 2)) / 10; // in cm
+        public double getDiameter() {
+            return diameter_mm;
         }
 
-        public double getXAngle() {
-            return computation.calculateHorizontalAngle(mat, algaeCenter.x, 0);
+        public int getMinArea() {
+            return min_area;
         }
 
-        public double getYAngle() {
-            return computation.calculateVerticalAngle(mat, algaeCenter.y, 0);
+        public double getMinCircularity() {
+            return min_circularity;
         }
 
-        public Contour geContour() {
-            return new Contour(new Rect2d(algaeCenter.x-algaeRadius, algaeCenter.y-algaeRadius, algaeRadius*2, algaeRadius*2));
-        }
-
-        public CVShape getShape() {
-            return new CVShape(geContour(), algaeCenter, algaeRadius);
-        }
-
-        public Transform3d getCameraToAlgaeTransform() {
-            double xTranslation = getDistance() * Math.cos(Math.toRadians(getYAngle())) * Math.cos(Math.toRadians(getXAngle()));
-            double yTranslation = -1 * getDistance() * Math.cos(Math.toRadians(getYAngle())) * Math.sin(Math.toRadians(getXAngle()));
-            double zTranslation = getDistance() * Math.sin(Math.toRadians(getYAngle()));
-            return new Transform3d(xTranslation, yTranslation, zTranslation, new Rotation3d());
+        public CameraCalibrationCoefficients getCameraCalibration() {
+            return cameraCalibration;
         }
     }
 
     @Override
-    protected List<AlgaePose> process(Pair<Mat, List<Contour>> in) {
-        var contours = in.getRight();
-        var mat = in.getLeft();
-        // Mat outputMat = in.clone();
-        Optional<AlgaeResult> result = detector.findLargestAlgae(contours);
+    protected List<AlgaeResult> process(List<Contour> in) {
+        Optional<AlgaeResult> result = detector.findLargestAlgae(in);
         if (result.isPresent()) {
             Point algaeCenter = result.get().getCenter();
             double algaeRadius = result.get().getRadius();
 
-            // // Calculate distance and angles
-            // double distance = (computation.calculateDistance(algaeRadius * 2)) / 10; // in cm
-            // double x_angle = computation.calculateHorizontalAngle(in, algaeCenter.x, 45.7);
-            // double y_angle = computation.calculateVerticalAngle(in, algaeCenter.y, 65);
-
-            // Optionally, display some information on the image
-            // Imgproc.putText(outputMat, "Distance: " + distance + " cm", new Point(50, 50),
-            //         Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
-            // Imgproc.putText(outputMat, "X Angle: " + x_angle + " degrees", new Point(50, 100),
-            //         Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
-            // Imgproc.putText(outputMat, "Y Angle: " + y_angle + " degrees", new Point(50, 150),
-            //         Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
-            
-            // Imgproc.circle(outputMat, new Point(unpaddedX, unpaddedY), (int) algaeRadius, new Scalar(255, 0, 255), 5);
-            return List.of(new AlgaePose(algaeCenter, algaeRadius, in.getLeft()));
+            return List.of(new AlgaeResult(algaeCenter, algaeRadius));
         }
         return List.of();
     }
 
-    public static class AlgaeDetectionParams {
-    }
-
-    public static class AlgaeResult {
+    public class AlgaeResult {
         private Point center;
         private double radius;
     
@@ -148,9 +112,36 @@ public class AlgaeDetectionPipe extends CVPipe<Pair<Mat, List<Contour>>, List<Al
         public double getRadius() {
             return radius;
         }
+
+        public double getDistance() {
+            return (converter.calculateDistance(radius * 2)) / 10; // in m
+        }
+
+        public double getXAngle() {
+            return converter.calculateHorizontalAngle(center.x);
+        }
+
+        public double getYAngle() {
+            return converter.calculateVerticalAngle(center.y);
+        }
+
+        public Contour geContour() {
+            return new Contour(new Rect2d(center.x-radius, center.y-radius, radius*2, radius*2));
+        }
+
+        public CVShape getShape() {
+            return new CVShape(geContour(), center, radius);
+        }
+
+        public Transform3d getCameraToAlgaeTransform() {
+            double xTranslation = getDistance() * Math.cos(Math.toRadians(getYAngle())) * Math.cos(Math.toRadians(getXAngle()));
+            double yTranslation = -1 * getDistance() * Math.cos(Math.toRadians(getYAngle())) * Math.sin(Math.toRadians(getXAngle()));
+            double zTranslation = getDistance() * Math.sin(Math.toRadians(getYAngle()));
+            return new Transform3d(xTranslation, yTranslation, zTranslation, new Rotation3d());
+        }
     }
 
-    public static class ObjectDetection {
+    public class ObjectDetection {
         private int minArea;
         private double minCircularity;
 
@@ -207,100 +198,113 @@ public class AlgaeDetectionPipe extends CVPipe<Pair<Mat, List<Contour>>, List<Al
         }
     }
 
-    static class Computation {
-        double focalLengthX;
+    static class ScreenToWorldConverter {
         double objectRealWidth;
-        static Mat CAMERA_MATRIX;
+        Mat CAMERA_MATRIX;
 
-        @SuppressWarnings("static-access")
-        public Computation(double focalLengthX, double objectRealWidth, Mat cameraMatrix) {
-            this.focalLengthX = focalLengthX;
+        public ScreenToWorldConverter(double objectRealWidth, Mat cameraMatrix) {
             this.objectRealWidth = objectRealWidth;
             this.CAMERA_MATRIX = cameraMatrix; // Initialize with passed camera matrix
         }
 
         public double calculateDistance(double detectionWidth) {
-            return (((objectRealWidth * focalLengthX) / detectionWidth) - 20) / 100; // m
+            double fx = CAMERA_MATRIX.get(0, 0)[0];
+            return (((objectRealWidth * fx) / detectionWidth) - 20) / 100; // m
         }
 
-        public double calculateHorizontalAngle(Mat frame, double objectCenterX, double cameraOffset) {
-            try {
-                double screenCenterX = frame.width() / 2;
-                double screenCenterY = frame.height() / 2;
-
-                // Adjust the object center x-coordinate based on camera offset
-                // objectCenterX -= cameraOffset; // offset in mm
-
-                Mat matInverted = new Mat();
-                Core.invert(CAMERA_MATRIX, matInverted);
-
-                // Calculate vector1 and vector2
-                MatOfFloat vector1 = new MatOfFloat((float) objectCenterX, (float) screenCenterY, 1.0f);
-                MatOfFloat vector2 = new MatOfFloat((float) screenCenterX, (float) screenCenterY, 1.0f);
-
-                // Convert MatOfFloat to float array
-                float[] vec1Arr = vector1.toArray();
-                float[] vec2Arr = vector2.toArray();
-
-                // Perform the dot product and angle calculation
-                double dotProduct = vec1Arr[0] * vec2Arr[0] + vec1Arr[1] * vec2Arr[1] + vec1Arr[2] * vec2Arr[2];
-
-                double norm1 = Math.sqrt(vec1Arr[0] * vec1Arr[0] + vec1Arr[1] * vec1Arr[1] + vec1Arr[2] * vec1Arr[2]);
-                double norm2 = Math.sqrt(vec2Arr[0] * vec2Arr[0] + vec2Arr[1] * vec2Arr[1] + vec2Arr[2] * vec2Arr[2]);
-
-                double cosAngle = dotProduct / (norm1 * norm2);
-                double realAngle = Math.toDegrees(Math.acos(cosAngle));
-
-                if (objectCenterX < screenCenterX) {
-                    realAngle *= -1;
-                }
-
-                return realAngle;
-
-            } catch (Exception e) {
-                System.out.println("Error occurred while calculating horizontal angle");
-                return 0.0;
-            }
+        public double calculateHorizontalAngle(double objectCenterX) {
+            // Extract focal length (fx) and principal point (cx) from the camera matrix
+            double fx = CAMERA_MATRIX.get(0, 0)[0];
+            double cx = CAMERA_MATRIX.get(0, 2)[0];
+        
+            // Compute the normalized x coordinate: (u - cx) / fx
+            double normalizedX = (objectCenterX - cx) / fx;
+        
+            // Calculate the horizontal angle in radians and convert to degrees
+            double angleRad = Math.atan(normalizedX);
+            double angleDeg = Math.toDegrees(angleRad);
+        
+            return angleDeg;
         }
 
-        public double calculateVerticalAngle(Mat frame, double objectCenterY, double cameraOffset) {
-            try {
-                double screenCenterX = frame.width() / 2;
-                double screenCenterY = frame.height() / 2;
-
-                // Adjust the object center y-coordinate based on camera offset
-                // objectCenterY -= cameraOffset; // offset in mm
-
-                Mat matInverted = new Mat();
-                Core.invert(CAMERA_MATRIX, matInverted); // Invert camera matrix
-
-                // Calculate vector1 and vector2
-                MatOfFloat vector1 = new MatOfFloat((float) screenCenterX, (float) objectCenterY, 1.0f);
-                MatOfFloat vector2 = new MatOfFloat((float) screenCenterX, (float) screenCenterY, 1.0f);
-
-                // Convert MatOfFloat to float array
-                float[] vec1Arr = vector1.toArray();
-                float[] vec2Arr = vector2.toArray();
-
-                // Perform the dot product and angle calculation
-                double dotProduct = vec1Arr[0] * vec2Arr[0] + vec1Arr[1] * vec2Arr[1] + vec1Arr[2] * vec2Arr[2];
-
-                double norm1 = Math.sqrt(vec1Arr[0] * vec1Arr[0] + vec1Arr[1] * vec1Arr[1] + vec1Arr[2] * vec1Arr[2]);
-                double norm2 = Math.sqrt(vec2Arr[0] * vec2Arr[0] + vec2Arr[1] * vec2Arr[1] + vec2Arr[2] * vec2Arr[2]);
-
-                double cosAngle = dotProduct / (norm1 * norm2);
-                double realAngle = Math.toDegrees(Math.acos(cosAngle));
-
-                if (objectCenterY < screenCenterY) {
-                    realAngle *= -1;
-                }
-
-                return -realAngle;
-
-            } catch (Exception e) {
-                System.out.println("Error occurred while calculating vertical angle");
-                return 0.0;
-            }
+        public double calculateVerticalAngle(double objectCenterY) {
+            // Extract focal length (fy) and principal point (cy) from the camera matrix
+            double fy = CAMERA_MATRIX.get(1, 1)[0];
+            double cy = CAMERA_MATRIX.get(1, 2)[0];
+        
+            // Compute the normalized y coordinate: (objectCenterY - cy) / fy
+            double normalizedY = (objectCenterY - cy) / fy;
+        
+            // Calculate the vertical angle in radians and convert to degrees
+            double angleRad = Math.atan(normalizedY);
+            double realAngle = Math.toDegrees(angleRad);
+        
+            return realAngle;
         }
+
+        // public double calculateHorizontalAngle(Mat frame, double objectCenterX, double cameraOffset) {
+        //     double screenCenterX = frame.width() / 2;
+        //     double screenCenterY = frame.height() / 2;
+
+        //     // Adjust the object center x-coordinate based on camera offset
+        //     // objectCenterX -= cameraOffset; // offset in mm
+
+        //     Mat matInverted = new Mat();
+        //     Core.invert(CAMERA_MATRIX, matInverted);
+
+        //     // Calculate vector1 and vector2
+        //     MatOfFloat vector1 = new MatOfFloat((float) objectCenterX, (float) screenCenterY, 1.0f);
+        //     MatOfFloat vector2 = new MatOfFloat((float) screenCenterX, (float) screenCenterY, 1.0f);
+
+        //     // Convert MatOfFloat to float array
+        //     float[] vec1Arr = vector1.toArray();
+        //     float[] vec2Arr = vector2.toArray();
+
+        //     // Perform the dot product and angle calculation
+        //     double dotProduct = vec1Arr[0] * vec2Arr[0] + vec1Arr[1] * vec2Arr[1] + vec1Arr[2] * vec2Arr[2];
+
+        //     double norm1 = Math.sqrt(vec1Arr[0] * vec1Arr[0] + vec1Arr[1] * vec1Arr[1] + vec1Arr[2] * vec1Arr[2]);
+        //     double norm2 = Math.sqrt(vec2Arr[0] * vec2Arr[0] + vec2Arr[1] * vec2Arr[1] + vec2Arr[2] * vec2Arr[2]);
+
+        //     double cosAngle = dotProduct / (norm1 * norm2);
+        //     double realAngle = Math.toDegrees(Math.acos(cosAngle));
+
+        //     if (objectCenterX < screenCenterX) {
+        //         realAngle *= -1;
+        //     }
+
+        //     return realAngle;
+        // }
+
+        // public double calculateVerticalAngle(Mat frame, double objectCenterY, double cameraOffset) {
+        //     double screenCenterX = frame.width() / 2;
+        //     double screenCenterY = frame.height() / 2;
+
+        //     // Adjust the object center y-coordinate based on camera offset
+        //     // objectCenterY -= cameraOffset; // offset in mm\
+
+        //     // Calculate vector1 and vector2
+        //     MatOfFloat vector1 = new MatOfFloat((float) screenCenterX, (float) objectCenterY, 1.0f);
+        //     MatOfFloat vector2 = new MatOfFloat((float) screenCenterX, (float) screenCenterY, 1.0f);
+
+        //     // Convert MatOfFloat to float array
+        //     float[] vec1Arr = vector1.toArray();
+        //     float[] vec2Arr = vector2.toArray();
+
+        //     // Perform the dot product and angle calculation
+        //     double dotProduct = vec1Arr[0] * vec2Arr[0] + vec1Arr[1] * vec2Arr[1] + vec1Arr[2] * vec2Arr[2];
+
+        //     double norm1 = Math.sqrt(vec1Arr[0] * vec1Arr[0] + vec1Arr[1] * vec1Arr[1] + vec1Arr[2] * vec1Arr[2]);
+        //     double norm2 = Math.sqrt(vec2Arr[0] * vec2Arr[0] + vec2Arr[1] * vec2Arr[1] + vec2Arr[2] * vec2Arr[2]);
+
+        //     double cosAngle = dotProduct / (norm1 * norm2);
+        //     double realAngle = Math.toDegrees(Math.acos(cosAngle));
+
+        //     if (objectCenterY < screenCenterY) {
+        //         realAngle *= -1;
+        //     }
+
+        //     return -realAngle;
+        // }
     }
 }

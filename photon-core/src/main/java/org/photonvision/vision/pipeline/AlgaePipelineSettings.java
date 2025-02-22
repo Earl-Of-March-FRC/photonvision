@@ -17,7 +17,7 @@ public class AlgaePipelineSettings extends AdvancedPipelineSettings{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        AlgaePipelineSettings that = (AlgaePipelineSettings) o;
+        // AlgaePipelineSettings that = (AlgaePipelineSettings) o;
         return true;
     }
 

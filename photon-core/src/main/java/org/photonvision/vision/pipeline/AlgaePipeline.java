@@ -3,11 +3,9 @@ package org.photonvision.vision.pipeline;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencv.core.Mat;
 import org.photonvision.vision.frame.Frame;
 import org.photonvision.vision.frame.FrameThresholdType;
-import org.photonvision.vision.opencv.CVMat;
 import org.photonvision.vision.opencv.CVShape;
 import org.photonvision.vision.opencv.Contour;
 import org.photonvision.vision.opencv.DualOffsetValues;
@@ -20,10 +18,9 @@ import org.photonvision.vision.pipe.impl.Draw2dTargetsPipe;
 import org.photonvision.vision.pipe.impl.Draw3dTargetsPipe;
 import org.photonvision.vision.pipe.impl.FindContoursPipe;
 import org.photonvision.vision.pipe.impl.HSVPipe;
-import org.photonvision.vision.pipe.impl.MaskPipe;
-import org.photonvision.vision.pipe.impl.PaddedPipe;
-import org.photonvision.vision.pipe.impl.HSVPipe.HSVParams;
-import org.photonvision.vision.pipe.impl.AlgaeDetectionPipe.AlgaePose;
+import org.photonvision.vision.pipe.impl.EdgeMaskPipe;
+import org.photonvision.vision.pipe.impl.PaddingPipe;
+import org.photonvision.vision.pipe.impl.AlgaeDetectionPipe.AlgaeResult;
 import org.photonvision.vision.pipeline.result.CVPipelineResult;
 import org.photonvision.vision.target.PotentialTarget;
 import org.photonvision.vision.target.TrackedTarget;
@@ -31,9 +28,9 @@ import org.photonvision.vision.target.TrackedTarget;
 import edu.wpi.first.math.geometry.Transform3d;
 
 public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSettings> {
-    private final PaddedPipe paddedPipe = new PaddedPipe();
+    private final PaddingPipe paddedPipe = new PaddingPipe();
     private final HSVPipe hsvPipe = new HSVPipe();
-    private final MaskPipe maskPipe = new MaskPipe(); 
+    private final EdgeMaskPipe maskPipe = new EdgeMaskPipe(); 
     private final FindContoursPipe findContoursPipe = new FindContoursPipe();
     private final AlgaeDetectionPipe algaeDetectionPipe = new AlgaeDetectionPipe();
     private final Collect2dTargetsPipe collect2dTargetsPipe = new Collect2dTargetsPipe();
@@ -64,18 +61,19 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
                         settings.offsetDualPointB,
                         settings.offsetDualPointBArea);
         
-        PaddedPipe.PaddingParams paddingParams = new PaddedPipe.PaddingParams(20);
+        PaddingPipe.PaddingParams paddingParams = new PaddingPipe.PaddingParams(20);
         paddedPipe.setParams(paddingParams);
 
         HSVPipe.HSVParams hsvParams = new HSVPipe.HSVParams(settings.hsvHue, settings.hsvSaturation, settings.hsvValue, settings.hueInverted);
         hsvPipe.setParams(hsvParams);
         
-        MaskPipe.MaskParams maskParams = new MaskPipe.MaskParams(2,2,100,300,3,3);
+        EdgeMaskPipe.MaskParams maskParams = new EdgeMaskPipe.MaskParams(2,2,100,300,3,3);
         maskPipe.setParams(maskParams);
 
         FindContoursPipe.FindContoursParams findContoursParams = new FindContoursPipe.FindContoursParams();
+        findContoursPipe.setParams(findContoursParams);
 
-        AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams = new AlgaeDetectionPipe.AlgaeDetectionParams();
+        AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams = new AlgaeDetectionPipe.AlgaeDetectionParams(160.0, 3000, 0.3, frameStaticProperties.cameraCalibration);
         algaeDetectionPipe.setParams(algaeDetectionParams);
 
         Collect2dTargetsPipe.Collect2dTargetsParams collect2dTargetsParams =
@@ -135,12 +133,12 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         sumPipeNanosElapsed += contoursResult.nanosElapsed;
         List<Contour> contours = contoursResult.output;
 
-        CVPipeResult<List<AlgaePose>> algaeDetectionResult = algaeDetectionPipe.run(Pair.of(maskResult.output, contours));
+        CVPipeResult<List<AlgaeResult>> algaeDetectionResult = algaeDetectionPipe.run(contours);
         sumPipeNanosElapsed += algaeDetectionResult.nanosElapsed;
-        List<AlgaePose> algaePoses = algaeDetectionResult.output;
+        List<AlgaeResult> algaeResults = algaeDetectionResult.output;
         
         long currentTimeNanos = System.nanoTime();
-        List<CVShape> algaeShapes = algaePoses.stream().map(AlgaePose::getShape).collect(Collectors.toList());
+        List<CVShape> algaeShapes = algaeResults.stream().map(AlgaeResult::getShape).collect(Collectors.toList());
 
         List<PotentialTarget> potentialTargets = algaeShapes.stream().map(shape -> {
             return new PotentialTarget(shape.getContour(), shape);
@@ -153,9 +151,11 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         currentTimeNanos = System.nanoTime();
         List<TrackedTarget> targetList = collect2dTargetsResult.output;
 
-        for (int i = 0; i < targetList.size(); i++) {
-            targetList.get(i).setBestCameraToTarget3d(algaePoses.get(i).getCameraToAlgaeTransform());
-            targetList.get(i).setAltCameraToTarget3d(new Transform3d());
+        if (settings.solvePNPEnabled) {
+            for (int i = 0; i < targetList.size(); i++) {
+                targetList.get(i).setBestCameraToTarget3d(algaeResults.get(i).getCameraToAlgaeTransform());
+                targetList.get(i).setAltCameraToTarget3d(new Transform3d());
+            }
         }
 
         frame.processedImage.copyFrom(hsvResult.output);

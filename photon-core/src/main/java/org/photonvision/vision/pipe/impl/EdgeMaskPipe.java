@@ -1,12 +1,11 @@
 package org.photonvision.vision.pipe.impl;
 
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 import org.photonvision.vision.pipe.CVPipe;
 
-public class MaskPipe extends CVPipe<Mat, Mat, MaskPipe.MaskParams> {
+public class EdgeMaskPipe extends CVPipe<Mat, Mat, EdgeMaskPipe.MaskParams> {
 
     @Override
     protected Mat process(Mat inputMask) {

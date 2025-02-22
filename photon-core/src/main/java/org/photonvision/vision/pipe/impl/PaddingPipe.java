@@ -5,7 +5,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.photonvision.vision.pipe.CVPipe;
 
-public class PaddedPipe extends CVPipe<Mat, Mat, PaddedPipe.PaddingParams> {
+public class PaddingPipe extends CVPipe<Mat, Mat, PaddingPipe.PaddingParams> {
 
     @Override
     protected Mat process(Mat in) {
