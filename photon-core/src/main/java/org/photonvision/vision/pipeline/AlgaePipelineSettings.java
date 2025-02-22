@@ -22,7 +22,6 @@ import java.util.Objects;
 
 @JsonTypeName("AlgaePipelineSettings")
 public class AlgaePipelineSettings extends AdvancedPipelineSettings {
-
     public AlgaePipelineSettings() {
         super();
         pipelineType = PipelineType.Algae;
