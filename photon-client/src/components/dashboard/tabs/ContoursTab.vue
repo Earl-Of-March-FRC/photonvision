@@ -60,6 +60,7 @@ const interactiveCols = computed(() =>
 <template>
   <div>
     <pv-select
+      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
       v-model="useCameraSettingsStore().currentPipelineSettings.contourTargetOrientation"
       label="Target Orientation"
       tooltip="Used to determine how to calculate target landmarks, as well as aspect ratio"
@@ -87,7 +88,10 @@ const interactiveCols = computed(() =>
       @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourArea: value }, false)"
     />
     <pv-range-slider
-      v-if="useCameraSettingsStore().currentPipelineType !== PipelineType.ColoredShape"
+      v-if="
+        useCameraSettingsStore().currentPipelineType !== PipelineType.ColoredShape &&
+        useCameraSettingsStore().currentPipelineType !== PipelineType.Algae
+      "
       v-model="contourRatio"
       label="Ratio (W/H)"
       tooltip="Min and max ratio between the width and height of a contour's bounding rectangle"
@@ -118,6 +122,7 @@ const interactiveCols = computed(() =>
       @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourPerimeter: value }, false)"
     />
     <pv-slider
+      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
       v-model="useCameraSettingsStore().currentPipelineSettings.contourSpecklePercentage"
       label="Speckle Rejection"
       tooltip="Rejects contours whose average area is less than the given percentage of the average area of all the other contours"
