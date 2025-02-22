@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import PvSelect from "@/components/common/pv-select.vue";
 import { useCameraSettingsStore } from "@/stores/settings/CameraSettingsStore";
-import { TargetModel } from "@/types/PipelineTypes";
+import { PipelineType, TargetModel, type ActivePipelineSettings } from "@/types/PipelineTypes";
 import PvSlider from "@/components/common/pv-slider.vue";
 import { computed, getCurrentInstance } from "vue";
 import { useStateStore } from "@/stores/StateStore";
+
+// TODO fix pipeline typing in order to fix this, the store settings call should be able to infer that only valid pipeline type settings are exposed based on pre-checks for the entire config section
+// Defer reference to store access method
+const currentPipelineSettings = computed<ActivePipelineSettings>(
+  () => useCameraSettingsStore().currentPipelineSettings
+);
 
 const interactiveCols = computed(() =>
   (getCurrentInstance()?.proxy.$vuetify.breakpoint.mdAndDown || false) &&
@@ -15,7 +21,7 @@ const interactiveCols = computed(() =>
 </script>
 
 <template>
-  <div>
+  <div v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae">
     <pv-select
       v-model="useCameraSettingsStore().currentPipelineSettings.targetModel"
       label="Target Model"
