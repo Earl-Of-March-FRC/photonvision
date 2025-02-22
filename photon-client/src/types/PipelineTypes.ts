@@ -317,7 +317,6 @@ export const DefaultObjectDetectionPipelineSettings: ObjectDetectionPipelineSett
   model: ""
 };
 
-
 export interface AlgaePipelineSettings extends PipelineSettings {
   pipelineType: PipelineType.Algae;
   circularity: WebsocketNumberPair | [number, number];
@@ -338,7 +337,7 @@ export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
   outputShowMultipleTargets: false,
   cameraExposureRaw: 6,
   pipelineType: PipelineType.Algae,
-  circularity: { first: 30, second: 100},
+  circularity: { first: 30, second: 100 },
   padding: 20,
   erosion: 2,
   initialDilation: 2,
