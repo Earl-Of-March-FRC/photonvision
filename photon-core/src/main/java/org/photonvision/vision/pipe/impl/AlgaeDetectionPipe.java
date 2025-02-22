@@ -31,6 +31,7 @@ import org.opencv.core.Rect2d;
 import org.opencv.core.RotatedRect;
 import org.opencv.imgproc.Imgproc;
 import org.photonvision.vision.calibration.CameraCalibrationCoefficients;
+import org.photonvision.vision.frame.FrameStaticProperties;
 import org.photonvision.vision.opencv.CVShape;
 import org.photonvision.vision.opencv.Contour;
 import org.photonvision.vision.pipe.CVPipe;
@@ -56,8 +57,7 @@ public class AlgaeDetectionPipe
     public void setParams(AlgaeDetectionParams params) {
         super.setParams(params);
 
-        // Algae Pipes
-        detector = new ObjectDetection(params.getMinArea(), params.getMinCircularity());
+        detector = new ObjectDetection(params.getFrameProperties().imageArea, params.getMinArea(), params.getMaxArea(), params.getMinCircularity());
 
         if (params.getCameraCalibration() != null) {
             for (int i = 0; i < CAMERA_MATRIX.rows(); i++) {
@@ -72,32 +72,46 @@ public class AlgaeDetectionPipe
     }
 
     public static class AlgaeDetectionParams {
-        private final double diameter_mm;
-        private final int min_area;
-        private final double min_circularity;
+        private final double diameterMm;
+        private final double minArea;
+        private final double maxArea;
+        private final FrameStaticProperties frameProperties;
+        private final double minCircularity;
         private final CameraCalibrationCoefficients cameraCalibration;
 
         public AlgaeDetectionParams(
-                double diameter_mm,
-                int min_area,
-                double min_circularity,
+                double diameterMm,
+                double minArea,
+                double maxArea,
+                FrameStaticProperties frameProperties,
+                double minCircularity,
                 CameraCalibrationCoefficients cameraCalibration) {
-            this.diameter_mm = diameter_mm;
-            this.min_area = min_area;
-            this.min_circularity = min_circularity;
+            this.diameterMm = diameterMm;
+            this.minArea = minArea;
+            this.maxArea = maxArea;
+            this.frameProperties = frameProperties;
+            this.minCircularity = minCircularity;
             this.cameraCalibration = cameraCalibration;
         }
 
         public double getDiameter() {
-            return diameter_mm;
+            return diameterMm;
         }
 
-        public int getMinArea() {
-            return min_area;
+        public double getMinArea() {
+            return minArea;
+        }
+
+        public double getMaxArea() {
+            return maxArea;
+        }
+
+        public FrameStaticProperties getFrameProperties() {
+            return frameProperties;
         }
 
         public double getMinCircularity() {
-            return min_circularity;
+            return minCircularity;
         }
 
         public CameraCalibrationCoefficients getCameraCalibration() {
@@ -170,11 +184,15 @@ public class AlgaeDetectionPipe
     }
 
     public class ObjectDetection {
-        private int minArea;
+        private double totalImageArea;
+        private double minArea;
+        private double maxArea;
         private double minCircularity;
 
-        public ObjectDetection(int minArea, double minCircularity) {
+        public ObjectDetection(double totalImageArea, double minArea, double maxArea, double minCircularity) {
+            this.totalImageArea = totalImageArea;
             this.minArea = minArea;
+            this.maxArea = maxArea;
             this.minCircularity = minCircularity;
         }
 
@@ -199,7 +217,10 @@ public class AlgaeDetectionPipe
                 double perimeter = Imgproc.arcLength(contour2f, true);
                 double circularity = (perimeter > 0) ? (4 * Math.PI * area / (perimeter * perimeter)) : 0;
 
-                if (area > minArea && circularity > minCircularity) {
+                // area percentage
+                double areaPercentage = area / totalImageArea * 100;
+
+                if (areaPercentage >= minArea && areaPercentage <= maxArea && circularity > minCircularity) {
                     // Approximate the contour to a circle
                     RotatedRect minEnclosingCircle = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
                     Point center = minEnclosingCircle.center;

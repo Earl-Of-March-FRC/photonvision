@@ -92,7 +92,7 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
 
         AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams =
                 new AlgaeDetectionPipe.AlgaeDetectionParams(
-                        160.0, 3000, 0.3, frameStaticProperties.cameraCalibration);
+                        160.0, settings.contourArea.getFirst(), settings.contourArea.getSecond(), frameStaticProperties, 0.3, frameStaticProperties.cameraCalibration);
         algaeDetectionPipe.setParams(algaeDetectionParams);
 
         Collect2dTargetsPipe.Collect2dTargetsParams collect2dTargetsParams =
