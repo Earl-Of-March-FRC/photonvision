@@ -121,11 +121,9 @@ public class AlgaeDetectionPipe extends CVPipe<Pair<Mat, List<Contour>>, List<Al
             //         Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
             // Imgproc.putText(outputMat, "Y Angle: " + y_angle + " degrees", new Point(50, 150),
             //         Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 0, 0), 2);
-
-            int unpaddedX = (int) algaeCenter.x - PADDING;
-            int unpaddedY = (int) algaeCenter.y - PADDING;
+            
             // Imgproc.circle(outputMat, new Point(unpaddedX, unpaddedY), (int) algaeRadius, new Scalar(255, 0, 255), 5);
-            return List.of(new AlgaePose(new Point(unpaddedX, unpaddedY), algaeRadius, in.getLeft()));
+            return List.of(new AlgaePose(algaeCenter, algaeRadius, in.getLeft()));
         }
         return List.of();
     }
