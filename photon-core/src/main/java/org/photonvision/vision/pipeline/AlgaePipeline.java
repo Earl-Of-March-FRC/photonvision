@@ -104,9 +104,10 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         UnPadPipe.UnPadParams unPadParams = new UnPadPipe.UnPadParams(settings.padding);
         unPadPipe.setParams(unPadParams);
 
+
         AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams =
                 new AlgaeDetectionPipe.AlgaeDetectionParams(
-                        Units.inchesToMeters(16.25),
+                        ((Units.inchesToMeters(16.25)) * 1000),
                         settings.contourArea.getFirst(),
                         settings.contourArea.getSecond(),
                         frameStaticProperties,
@@ -115,7 +116,6 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
                         frameStaticProperties.cameraCalibration,
                         settings.padding);
         algaeDetectionPipe.setParams(algaeDetectionParams);
-
         Collect2dTargetsPipe.Collect2dTargetsParams collect2dTargetsParams =
                 new Collect2dTargetsPipe.Collect2dTargetsParams(
                         settings.offsetRobotOffsetMode,
