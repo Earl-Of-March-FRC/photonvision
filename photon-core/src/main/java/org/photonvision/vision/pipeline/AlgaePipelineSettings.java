@@ -20,9 +20,17 @@ package org.photonvision.vision.pipeline;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.Objects;
 
+import org.photonvision.common.util.numbers.IntegerCouple;
+
 @JsonTypeName("AlgaePipelineSettings")
 public class AlgaePipelineSettings extends AdvancedPipelineSettings {
+    public IntegerCouple circularity = new IntegerCouple(30, 100);
     public int padding = 20;
+    public int erosion = 2;
+    public int initialDilation = 2;
+    public IntegerCouple edgeThresholds = new IntegerCouple(100, 300);
+    public int edgeDilation = 3;
+    public int finalDilation = 3;
 
     public AlgaePipelineSettings() {
         super();
@@ -32,17 +40,32 @@ public class AlgaePipelineSettings extends AdvancedPipelineSettings {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         AlgaePipelineSettings that = (AlgaePipelineSettings) o;
-        return padding == that.padding;
+        return Objects.equals(circularity, that.circularity)
+                && padding == that.padding
+                && erosion == that.erosion
+                && initialDilation == that.initialDilation
+                && Objects.equals(edgeThresholds, that.edgeThresholds)
+                && edgeDilation == that.edgeDilation
+                && finalDilation == that.finalDilation;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
                 super.hashCode(),
-                padding);
+                circularity,
+                padding,
+                erosion,
+                initialDilation,
+                edgeThresholds,
+                edgeDilation,
+                finalDilation);
     }
 }

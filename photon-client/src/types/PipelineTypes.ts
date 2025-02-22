@@ -320,7 +320,13 @@ export const DefaultObjectDetectionPipelineSettings: ObjectDetectionPipelineSett
 
 export interface AlgaePipelineSettings extends PipelineSettings {
   pipelineType: PipelineType.Algae;
+  circularity: WebsocketNumberPair | [number, number];
   padding: number;
+  erosion: number;
+  initialDilation: number;
+  edgeThresholds: WebsocketNumberPair | [number, number];
+  edgeDilation: number;
+  finalDilation: number;
 }
 export type ConfigurableAlgaePipelineSettings = Partial<Omit<AlgaePipelineSettings, "pipelineType">> &
   ConfigurablePipelineSettings;
@@ -332,7 +338,13 @@ export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
   outputShowMultipleTargets: false,
   cameraExposureRaw: 6,
   pipelineType: PipelineType.Algae,
-  padding: 20
+  circularity: { first: 30, second: 100},
+  padding: 20,
+  erosion: 2,
+  initialDilation: 2,
+  edgeThresholds: { first: 100, second: 300 },
+  edgeDilation: 3,
+  finalDilation: 3
 };
 
 export interface Calibration3dPipelineSettings extends PipelineSettings {
