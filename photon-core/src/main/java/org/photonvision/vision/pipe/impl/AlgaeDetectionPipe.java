@@ -289,7 +289,7 @@ public class AlgaeDetectionPipe
 
         public double calculateDistance(double detectionWidth) {
             double fx = CAMERA_MATRIX.get(0, 0)[0];
-            return (((objectRealWidth * fx) / detectionWidth) - 20) / 100; // m
+            return (((objectRealWidth * fx) / detectionWidth) - 20) / 10_000; // m
         }
 
         public double calculateHorizontalAngle(double objectCenterX) {
