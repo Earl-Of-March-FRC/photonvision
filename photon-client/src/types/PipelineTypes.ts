@@ -303,7 +303,8 @@ export interface ObjectDetectionPipelineSettings extends PipelineSettings {
 export interface AlgaePipelineSettings extends PipelineSettings {
   pipelineType: PipelineType.Algae;
 }
-export type ConfigurableAlgaePipelineSettings = Partial<Omit<AlgaePipelineSettings, "pipelineType">> & ConfigurablePipelineSettings;
+export type ConfigurableAlgaePipelineSettings = Partial<Omit<AlgaePipelineSettings, "pipelineType">> &
+  ConfigurablePipelineSettings;
 export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
   ...DefaultPipelineSettings,
   cameraGain: 20,
