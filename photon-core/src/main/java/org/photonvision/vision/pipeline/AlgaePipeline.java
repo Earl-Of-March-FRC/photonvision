@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencv.core.Mat;
 import org.photonvision.vision.frame.Frame;
 import org.photonvision.vision.frame.FrameThresholdType;
+import org.photonvision.vision.opencv.CVMat;
 import org.photonvision.vision.opencv.CVShape;
 import org.photonvision.vision.opencv.Contour;
 import org.photonvision.vision.opencv.DualOffsetValues;
@@ -119,12 +120,9 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
 
     @Override
     protected CVPipelineResult process(Frame frame, AlgaePipelineSettings settings) {
-        
-    
         long sumPipeNanosElapsed = 0;
         
         CVPipeResult<Mat> paddedResult = paddedPipe.run(frame.colorImage.getMat());
-        
         sumPipeNanosElapsed += paddedResult.nanosElapsed;
 
         CVPipeResult<Mat> hsvResult = hsvPipe.run(paddedResult.output);
@@ -134,11 +132,10 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         sumPipeNanosElapsed += maskResult.nanosElapsed;
 
         CVPipeResult<List<Contour>> contoursResult = findContoursPipe.run(maskResult.output);
-
+        sumPipeNanosElapsed += contoursResult.nanosElapsed;
         List<Contour> contours = contoursResult.output;
 
         CVPipeResult<List<AlgaePose>> algaeDetectionResult = algaeDetectionPipe.run(Pair.of(maskResult.output, contours));
-
         sumPipeNanosElapsed += algaeDetectionResult.nanosElapsed;
         List<AlgaePose> algaePoses = algaeDetectionResult.output;
         
@@ -161,7 +158,8 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
             targetList.get(i).setAltCameraToTarget3d(new Transform3d());
         }
 
-        frame.processedImage.copyFrom(frame.colorImage.getMat());
+        frame.processedImage.copyFrom(hsvResult.output);
+        // frame.processedImage.copyFrom(frame.colorImage.getMat());
 
         sumPipeNanosElapsed += System.nanoTime() - currentTimeNanos;
 
