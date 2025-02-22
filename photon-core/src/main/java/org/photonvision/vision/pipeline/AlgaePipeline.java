@@ -38,6 +38,7 @@ import org.photonvision.vision.pipe.impl.EdgeMaskPipe;
 import org.photonvision.vision.pipe.impl.FindContoursPipe;
 import org.photonvision.vision.pipe.impl.HSVPipe;
 import org.photonvision.vision.pipe.impl.PaddingPipe;
+import org.photonvision.vision.pipe.impl.UnPadPipe;
 import org.photonvision.vision.pipeline.result.CVPipelineResult;
 import org.photonvision.vision.target.PotentialTarget;
 import org.photonvision.vision.target.TrackedTarget;
@@ -47,6 +48,7 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
     private final HSVPipe hsvPipe = new HSVPipe();
     private final EdgeMaskPipe maskPipe = new EdgeMaskPipe();
     private final FindContoursPipe findContoursPipe = new FindContoursPipe();
+    private final UnPadPipe unPadPipe = new UnPadPipe();
     private final AlgaeDetectionPipe algaeDetectionPipe = new AlgaeDetectionPipe();
     private final Collect2dTargetsPipe collect2dTargetsPipe = new Collect2dTargetsPipe();
     private final Draw2dCrosshairPipe draw2dCrosshairPipe = new Draw2dCrosshairPipe();
@@ -75,8 +77,9 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
                         settings.offsetDualPointB,
                         settings.offsetDualPointBArea);
 
-        PaddingPipe.PaddingParams paddingParams = new PaddingPipe.PaddingParams(20);
+        PaddingPipe.PaddingParams paddingParams = new PaddingPipe.PaddingParams(settings.padding);
         paddedPipe.setParams(paddingParams);
+        System.out.println("paddingParams: " + settings.padding);
 
         HSVPipe.HSVParams hsvParams =
                 new HSVPipe.HSVParams(
@@ -90,9 +93,12 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
                 new FindContoursPipe.FindContoursParams();
         findContoursPipe.setParams(findContoursParams);
 
+        UnPadPipe.UnPadParams unPadParams = new UnPadPipe.UnPadParams(settings.padding);
+        unPadPipe.setParams(unPadParams);
+
         AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams =
                 new AlgaeDetectionPipe.AlgaeDetectionParams(
-                        160.0, settings.contourArea.getFirst(), settings.contourArea.getSecond(), frameStaticProperties, 0.3, frameStaticProperties.cameraCalibration);
+                        160.0, settings.contourArea.getFirst(), settings.contourArea.getSecond(), frameStaticProperties, 0.3, frameStaticProperties.cameraCalibration, settings.padding);
         algaeDetectionPipe.setParams(algaeDetectionParams);
 
         Collect2dTargetsPipe.Collect2dTargetsParams collect2dTargetsParams =
@@ -152,6 +158,8 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         sumPipeNanosElapsed += contoursResult.nanosElapsed;
         List<Contour> contours = contoursResult.output;
 
+        CVPipeResult<Mat> unPadResult = unPadPipe.run(hsvResult.output);
+
         CVPipeResult<List<AlgaeResult>> algaeDetectionResult = algaeDetectionPipe.run(contours);
         sumPipeNanosElapsed += algaeDetectionResult.nanosElapsed;
         List<AlgaeResult> algaeResults = algaeDetectionResult.output;
@@ -183,7 +191,7 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
             }
         }
 
-        frame.processedImage.copyFrom(hsvResult.output);
+        frame.processedImage.copyFrom(unPadResult.output);
         // frame.processedImage.copyFrom(frame.colorImage.getMat());
 
         sumPipeNanosElapsed += System.nanoTime() - currentTimeNanos;

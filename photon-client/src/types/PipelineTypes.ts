@@ -299,22 +299,6 @@ export interface ObjectDetectionPipelineSettings extends PipelineSettings {
   box_thresh: number;
   model: string;
 }
-
-export interface AlgaePipelineSettings extends PipelineSettings {
-  pipelineType: PipelineType.Algae;
-}
-export type ConfigurableAlgaePipelineSettings = Partial<Omit<AlgaePipelineSettings, "pipelineType">> &
-  ConfigurablePipelineSettings;
-export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
-  ...DefaultPipelineSettings,
-  cameraGain: 20,
-  targetModel: TargetModel.InfiniteRechargeHighGoalOuter,
-  ledMode: true,
-  outputShowMultipleTargets: false,
-  cameraExposureRaw: 6,
-  pipelineType: PipelineType.Algae
-};
-
 export type ConfigurableObjectDetectionPipelineSettings = Partial<
   Omit<ObjectDetectionPipelineSettings, "pipelineType">
 > &
@@ -331,6 +315,24 @@ export const DefaultObjectDetectionPipelineSettings: ObjectDetectionPipelineSett
   nms: 0.45,
   box_thresh: 0.25,
   model: ""
+};
+
+
+export interface AlgaePipelineSettings extends PipelineSettings {
+  pipelineType: PipelineType.Algae;
+  padding: number;
+}
+export type ConfigurableAlgaePipelineSettings = Partial<Omit<AlgaePipelineSettings, "pipelineType">> &
+  ConfigurablePipelineSettings;
+export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
+  ...DefaultPipelineSettings,
+  cameraGain: 20,
+  targetModel: TargetModel.InfiniteRechargeHighGoalOuter,
+  ledMode: true,
+  outputShowMultipleTargets: false,
+  cameraExposureRaw: 6,
+  pipelineType: PipelineType.Algae,
+  padding: 20
 };
 
 export interface Calibration3dPipelineSettings extends PipelineSettings {

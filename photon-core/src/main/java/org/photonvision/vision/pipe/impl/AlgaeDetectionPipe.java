@@ -78,6 +78,7 @@ public class AlgaeDetectionPipe
         private final FrameStaticProperties frameProperties;
         private final double minCircularity;
         private final CameraCalibrationCoefficients cameraCalibration;
+        private final int padding;
 
         public AlgaeDetectionParams(
                 double diameterMm,
@@ -85,13 +86,15 @@ public class AlgaeDetectionPipe
                 double maxArea,
                 FrameStaticProperties frameProperties,
                 double minCircularity,
-                CameraCalibrationCoefficients cameraCalibration) {
+                CameraCalibrationCoefficients cameraCalibration,
+                int padding) {
             this.diameterMm = diameterMm;
             this.minArea = minArea;
             this.maxArea = maxArea;
             this.frameProperties = frameProperties;
             this.minCircularity = minCircularity;
             this.cameraCalibration = cameraCalibration;
+            this.padding = padding;
         }
 
         public double getDiameter() {
@@ -117,6 +120,10 @@ public class AlgaeDetectionPipe
         public CameraCalibrationCoefficients getCameraCalibration() {
             return cameraCalibration;
         }
+
+        public int getPadding() {
+            return padding;
+        }
     }
 
     @Override
@@ -126,7 +133,9 @@ public class AlgaeDetectionPipe
             Point algaeCenter = result.get().getCenter();
             double algaeRadius = result.get().getRadius();
 
-            return List.of(new AlgaeResult(algaeCenter, algaeRadius));
+            int unpaddedX = (int) algaeCenter.x - params.getPadding();
+            int unpaddedY = (int) algaeCenter.y - params.getPadding();
+            return List.of(new AlgaeResult(new Point(unpaddedX, unpaddedY), algaeRadius));
         }
         return List.of();
     }

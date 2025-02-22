@@ -22,6 +22,8 @@ import java.util.Objects;
 
 @JsonTypeName("AlgaePipelineSettings")
 public class AlgaePipelineSettings extends AdvancedPipelineSettings {
+    public int padding = 20;
+
     public AlgaePipelineSettings() {
         super();
         pipelineType = PipelineType.Algae;
@@ -33,12 +35,14 @@ public class AlgaePipelineSettings extends AdvancedPipelineSettings {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        // AlgaePipelineSettings that = (AlgaePipelineSettings) o;
-        return true;
+        AlgaePipelineSettings that = (AlgaePipelineSettings) o;
+        return padding == that.padding;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode());
+        return Objects.hash(
+                super.hashCode(),
+                padding);
     }
 }

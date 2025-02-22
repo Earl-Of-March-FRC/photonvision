@@ -236,5 +236,15 @@ const interactiveCols = computed(() =>
         @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourRadius: value }, false)"
       />
     </template>
+    <template v-else-if="currentPipelineSettings.pipelineType === PipelineType.Algae">
+      <pv-slider
+        v-model="currentPipelineSettings.padding"
+        label="Padding"
+        :min="0"
+        :max="500"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ padding: value }, false)"
+      />
+    </template>
   </div>
 </template>
