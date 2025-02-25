@@ -19,7 +19,6 @@ package org.photonvision.vision.pipeline;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import org.opencv.core.Mat;
@@ -103,7 +102,6 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
 
         UnPadPipe.UnPadParams unPadParams = new UnPadPipe.UnPadParams(settings.padding);
         unPadPipe.setParams(unPadParams);
-
 
         AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams =
                 new AlgaeDetectionPipe.AlgaeDetectionParams(
