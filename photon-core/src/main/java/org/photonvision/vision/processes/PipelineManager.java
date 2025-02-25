@@ -272,6 +272,10 @@ public class PipelineManager {
                 currentUserPipeline =
                         new ObjectDetectionPipeline((ObjectDetectionPipelineSettings) desiredPipelineSettings);
             }
+            case Algae -> {
+                logger.debug("Creating Algae Pipeline");
+                currentUserPipeline = new AlgaePipeline((AlgaePipelineSettings) desiredPipelineSettings);
+            }
             case Calib3d, DriverMode -> {}
         }
     }
@@ -362,6 +366,11 @@ public class PipelineManager {
             }
             case ObjectDetection -> {
                 var added = new ObjectDetectionPipelineSettings();
+                added.pipelineNickname = nickname;
+                return added;
+            }
+            case Algae -> {
+                var added = new AlgaePipelineSettings();
                 added.pipelineNickname = nickname;
                 return added;
             }

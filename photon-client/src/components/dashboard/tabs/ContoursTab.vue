@@ -48,6 +48,28 @@ const contourRadius = computed<[number, number]>({
     }
   }
 });
+const circularity = computed<[number, number]>({
+  get: () =>
+    currentPipelineSettings.value.pipelineType === PipelineType.Algae
+      ? (Object.values(currentPipelineSettings.value.circularity) as [number, number])
+      : ([0, 0] as [number, number]),
+  set: (v) => {
+    if (currentPipelineSettings.value.pipelineType === PipelineType.Algae) {
+      currentPipelineSettings.value.circularity = v;
+    }
+  }
+});
+const edgeThresholds = computed<[number, number]>({
+  get: () =>
+    currentPipelineSettings.value.pipelineType === PipelineType.Algae
+      ? (Object.values(currentPipelineSettings.value.edgeThresholds) as [number, number])
+      : ([0, 0] as [number, number]),
+  set: (v) => {
+    if (currentPipelineSettings.value.pipelineType === PipelineType.Algae) {
+      currentPipelineSettings.value.edgeThresholds = v;
+    }
+  }
+});
 
 const interactiveCols = computed(() =>
   (getCurrentInstance()?.proxy.$vuetify.breakpoint.mdAndDown || false) &&
@@ -60,6 +82,7 @@ const interactiveCols = computed(() =>
 <template>
   <div>
     <pv-select
+      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
       v-model="useCameraSettingsStore().currentPipelineSettings.contourTargetOrientation"
       label="Target Orientation"
       tooltip="Used to determine how to calculate target landmarks, as well as aspect ratio"
@@ -87,7 +110,10 @@ const interactiveCols = computed(() =>
       @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourArea: value }, false)"
     />
     <pv-range-slider
-      v-if="useCameraSettingsStore().currentPipelineType !== PipelineType.ColoredShape"
+      v-if="
+        useCameraSettingsStore().currentPipelineType !== PipelineType.ColoredShape &&
+        useCameraSettingsStore().currentPipelineType !== PipelineType.Algae
+      "
       v-model="contourRatio"
       label="Ratio (W/H)"
       tooltip="Min and max ratio between the width and height of a contour's bounding rectangle"
@@ -118,6 +144,7 @@ const interactiveCols = computed(() =>
       @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourPerimeter: value }, false)"
     />
     <pv-slider
+      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
       v-model="useCameraSettingsStore().currentPipelineSettings.contourSpecklePercentage"
       label="Speckle Rejection"
       tooltip="Rejects contours whose average area is less than the given percentage of the average area of all the other contours"
@@ -229,6 +256,64 @@ const interactiveCols = computed(() =>
         :max="100"
         :slider-cols="interactiveCols"
         @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourRadius: value }, false)"
+      />
+    </template>
+    <template v-else-if="currentPipelineSettings.pipelineType === PipelineType.Algae">
+      <pv-range-slider
+        v-model="circularity"
+        label="Circularity"
+        :min="0"
+        :max="100"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ circularity: value }, false)"
+      />
+      <pv-slider
+        v-model="currentPipelineSettings.padding"
+        label="Padding"
+        :min="0"
+        :max="500"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ padding: value }, false)"
+      />
+      <pv-slider
+        v-model="currentPipelineSettings.erosion"
+        label="Erosion"
+        :min="0"
+        :max="8"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ erosion: value }, false)"
+      />
+      <pv-slider
+        v-model="currentPipelineSettings.initialDilation"
+        label="Initial Dilation"
+        :min="0"
+        :max="8"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ initialDilation: value }, false)"
+      />
+      <pv-range-slider
+        v-model="edgeThresholds"
+        label="Edge Threshold"
+        :min="0"
+        :max="1000"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ edgeThresholds: value }, false)"
+      />
+      <pv-slider
+        v-model="currentPipelineSettings.edgeDilation"
+        label="Edge Dilation"
+        :min="0"
+        :max="8"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ edgeDilation: value }, false)"
+      />
+      <pv-slider
+        v-model="currentPipelineSettings.finalDilation"
+        label="Final Dilation"
+        :min="0"
+        :max="8"
+        :slider-cols="interactiveCols"
+        @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ finalDilation: value }, false)"
       />
     </template>
   </div>
