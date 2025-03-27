@@ -39,6 +39,7 @@ import org.photonvision.vision.pipe.impl.EdgeMaskPipe;
 import org.photonvision.vision.pipe.impl.FindContoursPipe;
 import org.photonvision.vision.pipe.impl.HSVPipe;
 import org.photonvision.vision.pipe.impl.PaddingPipe;
+import org.photonvision.vision.pipe.impl.SortContoursPipe;
 import org.photonvision.vision.pipe.impl.UnPadPipe;
 import org.photonvision.vision.pipeline.result.CVPipelineResult;
 import org.photonvision.vision.target.PotentialTarget;
@@ -51,6 +52,7 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
     private final FindContoursPipe findContoursPipe = new FindContoursPipe();
     private final UnPadPipe unPadPipe = new UnPadPipe();
     private final AlgaeDetectionPipe algaeDetectionPipe = new AlgaeDetectionPipe();
+    private final SortContoursPipe sortContoursPipe = new SortContoursPipe();
     private final Collect2dTargetsPipe collect2dTargetsPipe = new Collect2dTargetsPipe();
     private final Draw2dCrosshairPipe draw2dCrosshairPipe = new Draw2dCrosshairPipe();
     private final Draw2dTargetsPipe draw2DTargetsPipe = new Draw2dTargetsPipe();
@@ -114,6 +116,14 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
                         frameStaticProperties.cameraCalibration,
                         settings.padding);
         algaeDetectionPipe.setParams(algaeDetectionParams);
+
+        SortContoursPipe.SortContoursParams sortContoursParams =
+                new SortContoursPipe.SortContoursParams(
+                        settings.contourSortMode,
+                        settings.outputShowMultipleTargets ? MAX_MULTI_TARGET_RESULTS : 1,
+                        frameStaticProperties); // TODO don't hardcode?
+        sortContoursPipe.setParams(sortContoursParams);
+
         Collect2dTargetsPipe.Collect2dTargetsParams collect2dTargetsParams =
                 new Collect2dTargetsPipe.Collect2dTargetsParams(
                         settings.offsetRobotOffsetMode,
@@ -180,18 +190,17 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         long currentTimeNanos = System.nanoTime();
         List<CVShape> algaeShapes =
                 algaeResults.stream().map(AlgaeResult::getShape).collect(Collectors.toList());
-
-        List<PotentialTarget> potentialTargets =
-                algaeShapes.stream()
-                        .map(
-                                shape -> {
-                                    return new PotentialTarget(shape.getContour(), shape);
-                                })
-                        .collect(Collectors.toList());
         sumPipeNanosElapsed += System.nanoTime() - currentTimeNanos;
 
+        CVPipeResult<List<PotentialTarget>> sortContoursResult =
+                sortContoursPipe.run(
+                        algaeShapes.stream()
+                                .map(shape -> new PotentialTarget(shape.getContour(), shape))
+                                .collect(Collectors.toList()));
+        sumPipeNanosElapsed += sortContoursResult.nanosElapsed;
+
         CVPipeResult<List<TrackedTarget>> collect2dTargetsResult =
-                collect2dTargetsPipe.run(potentialTargets);
+                collect2dTargetsPipe.run(sortContoursResult.output);
         sumPipeNanosElapsed += collect2dTargetsResult.nanosElapsed;
 
         currentTimeNanos = System.nanoTime();
