@@ -29,7 +29,6 @@ public enum PipelineType {
     Algae(5, AlgaePipeline.class),
     AprilTagAlgae(6, AprilTagAlgaePipeline.class);
 
-
     public final int baseIndex;
     public final Class clazz;
 
