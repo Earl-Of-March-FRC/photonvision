@@ -384,7 +384,6 @@ public class PipelineManager {
                 added.pipelineNickname = nickname;
                 return added;
             }
-
             case Calib3d, DriverMode -> {
                 logger.error("Got invalid pipeline type: " + type);
                 return null;
