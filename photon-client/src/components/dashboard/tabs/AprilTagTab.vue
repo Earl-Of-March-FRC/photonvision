@@ -23,7 +23,12 @@ const interactiveCols = computed(() =>
 </script>
 
 <template>
-  <div v-if="currentPipelineSettings.pipelineType === PipelineType.AprilTag">
+  <div
+    v-if="
+      currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
+      currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae
+    "
+  >
     <pv-select
       v-model="currentPipelineSettings.tagFamily"
       label="Target family"

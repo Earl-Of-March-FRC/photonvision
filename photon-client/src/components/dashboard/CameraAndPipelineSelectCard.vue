@@ -31,6 +31,9 @@ const changeCurrentCameraUniqueName = (cameraUniqueName: string) => {
     case PipelineType.Algae:
       pipelineType.value = WebsocketPipelineType.Algae;
       break;
+    case PipelineType.AprilTagAlgae:
+      pipelineType.value = WebsocketPipelineType.AprilTagAlgae;
+      break;
   }
 };
 
@@ -173,7 +176,8 @@ const pipelineTypesWrapper = computed<{ name: string; value: number }[]>(() => {
     { name: "Colored Shape", value: WebsocketPipelineType.ColoredShape },
     { name: "AprilTag", value: WebsocketPipelineType.AprilTag },
     { name: "Aruco", value: WebsocketPipelineType.Aruco },
-    { name: "Algae", value: WebsocketPipelineType.Algae }
+    { name: "Algae", value: WebsocketPipelineType.Algae },
+    { name: "AprilTag and Algae", value: WebsocketPipelineType.AprilTagAlgae }
   ];
   if (useSettingsStore().general.supportedBackends.length > 0) {
     pipelineTypes.push({ name: "Object Detection", value: WebsocketPipelineType.ObjectDetection });
@@ -237,6 +241,9 @@ useCameraSettingsStore().$subscribe((mutation, state) => {
       break;
     case PipelineType.Algae:
       pipelineType.value = WebsocketPipelineType.Algae;
+      break;
+    case PipelineType.AprilTagAlgae:
+      pipelineType.value = WebsocketPipelineType.AprilTagAlgae;
       break;
   }
 });

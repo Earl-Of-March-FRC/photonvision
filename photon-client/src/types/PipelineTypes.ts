@@ -7,7 +7,8 @@ export enum PipelineType {
   AprilTag = 4,
   Aruco = 5,
   ObjectDetection = 6,
-  Algae = 7
+  Algae = 7,
+  AprilTagAlgae = 8
 }
 
 export enum AprilTagFamily {
@@ -346,6 +347,62 @@ export const DefaultAlgaePipelineSettings: AlgaePipelineSettings = {
   finalDilation: 3
 };
 
+export interface AprilTagAlgaePipelineSettings extends PipelineSettings {
+  pipelineType: PipelineType.AprilTagAlgae;
+  hammingDist: number;
+  numIterations: number;
+  decimate: number;
+  blur: number;
+  decisionMargin: number;
+  refineEdges: boolean;
+  debug: boolean;
+  threads: number;
+  tagFamily: AprilTagFamily;
+  doMultiTarget: boolean;
+  doSingleTargetAlways: boolean;
+
+  circularity: WebsocketNumberPair | [number, number];
+  padding: number;
+  erosion: number;
+  initialDilation: number;
+  edgeThresholds: WebsocketNumberPair | [number, number];
+  edgeDilation: number;
+  finalDilation: number;
+}
+export type ConfigurableAprilTagAlgaePipelineSettings = Partial<
+  Omit<AprilTagAlgaePipelineSettings, "pipelineType" | "hammingDist" | "debug">
+> &
+  ConfigurablePipelineSettings;
+export const DefaultAprilTagAlgaePipelineSettings: AprilTagAlgaePipelineSettings = {
+  ...DefaultPipelineSettings,
+  cameraGain: 75,
+  targetModel: TargetModel.AprilTag6p5in_36h11,
+  ledMode: false,
+  outputShowMultipleTargets: true,
+  cameraExposureRaw: 20,
+  pipelineType: PipelineType.AprilTagAlgae,
+
+  hammingDist: 0,
+  numIterations: 40,
+  decimate: 1,
+  blur: 0,
+  decisionMargin: 35,
+  refineEdges: true,
+  debug: false,
+  threads: 4,
+  tagFamily: AprilTagFamily.Family36h11,
+  doMultiTarget: false,
+  doSingleTargetAlways: false,
+
+  circularity: { first: 30, second: 100 },
+  padding: 20,
+  erosion: 2,
+  initialDilation: 2,
+  edgeThresholds: { first: 100, second: 300 },
+  edgeDilation: 3,
+  finalDilation: 3
+};
+
 export interface Calibration3dPipelineSettings extends PipelineSettings {
   drawAllSnapshots: boolean;
 }
@@ -369,6 +426,7 @@ export type ActivePipelineSettings =
   | ArucoPipelineSettings
   | ObjectDetectionPipelineSettings
   | AlgaePipelineSettings
+  | AprilTagAlgaePipelineSettings
   | Calibration3dPipelineSettings;
 
 export type ActiveConfigurablePipelineSettings =
@@ -378,4 +436,5 @@ export type ActiveConfigurablePipelineSettings =
   | ConfigurableArucoPipelineSettings
   | ConfigurableObjectDetectionPipelineSettings
   | ConfigurableAlgaePipelineSettings
+  | ConfigurableAprilTagAlgaePipelineSettings
   | ConfigurableCalibration3dPipelineSettings;
