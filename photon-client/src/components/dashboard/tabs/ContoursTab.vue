@@ -50,22 +50,30 @@ const contourRadius = computed<[number, number]>({
 });
 const circularity = computed<[number, number]>({
   get: () =>
-    currentPipelineSettings.value.pipelineType === PipelineType.Algae
+    currentPipelineSettings.value.pipelineType === PipelineType.Algae ||
+    currentPipelineSettings.value.pipelineType === PipelineType.AprilTagAlgae
       ? (Object.values(currentPipelineSettings.value.circularity) as [number, number])
       : ([0, 0] as [number, number]),
   set: (v) => {
-    if (currentPipelineSettings.value.pipelineType === PipelineType.Algae) {
+    if (
+      currentPipelineSettings.value.pipelineType === PipelineType.Algae ||
+      currentPipelineSettings.value.pipelineType === PipelineType.AprilTagAlgae
+    ) {
       currentPipelineSettings.value.circularity = v;
     }
   }
 });
 const edgeThresholds = computed<[number, number]>({
   get: () =>
-    currentPipelineSettings.value.pipelineType === PipelineType.Algae
+    currentPipelineSettings.value.pipelineType === PipelineType.Algae ||
+    currentPipelineSettings.value.pipelineType === PipelineType.AprilTagAlgae
       ? (Object.values(currentPipelineSettings.value.edgeThresholds) as [number, number])
       : ([0, 0] as [number, number]),
   set: (v) => {
-    if (currentPipelineSettings.value.pipelineType === PipelineType.Algae) {
+    if (
+      currentPipelineSettings.value.pipelineType === PipelineType.Algae ||
+      currentPipelineSettings.value.pipelineType === PipelineType.AprilTagAlgae
+    ) {
       currentPipelineSettings.value.edgeThresholds = v;
     }
   }
@@ -82,7 +90,10 @@ const interactiveCols = computed(() =>
 <template>
   <div>
     <pv-select
-      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
+      v-if="
+        currentPipelineSettings.pipelineType !== PipelineType.Algae &&
+        currentPipelineSettings.pipelineType !== PipelineType.AprilTagAlgae
+      "
       v-model="useCameraSettingsStore().currentPipelineSettings.contourTargetOrientation"
       label="Target Orientation"
       tooltip="Used to determine how to calculate target landmarks, as well as aspect ratio"
@@ -112,7 +123,8 @@ const interactiveCols = computed(() =>
     <pv-range-slider
       v-if="
         useCameraSettingsStore().currentPipelineType !== PipelineType.ColoredShape &&
-        useCameraSettingsStore().currentPipelineType !== PipelineType.Algae
+        useCameraSettingsStore().currentPipelineType !== PipelineType.Algae &&
+        useCameraSettingsStore().currentPipelineType !== PipelineType.AprilTagAlgae
       "
       v-model="contourRatio"
       label="Ratio (W/H)"
@@ -144,7 +156,10 @@ const interactiveCols = computed(() =>
       @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourPerimeter: value }, false)"
     />
     <pv-slider
-      v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae"
+      v-if="
+        currentPipelineSettings.pipelineType !== PipelineType.Algae &&
+        currentPipelineSettings.pipelineType !== PipelineType.AprilTagAlgae
+      "
       v-model="useCameraSettingsStore().currentPipelineSettings.contourSpecklePercentage"
       label="Speckle Rejection"
       tooltip="Rejects contours whose average area is less than the given percentage of the average area of all the other contours"
@@ -258,7 +273,12 @@ const interactiveCols = computed(() =>
         @input="(value) => useCameraSettingsStore().changeCurrentPipelineSetting({ contourRadius: value }, false)"
       />
     </template>
-    <template v-else-if="currentPipelineSettings.pipelineType === PipelineType.Algae">
+    <template
+      v-else-if="
+        currentPipelineSettings.pipelineType === PipelineType.Algae ||
+        currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae
+      "
+    >
       <pv-range-slider
         v-model="circularity"
         label="Circularity"

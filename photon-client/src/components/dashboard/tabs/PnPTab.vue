@@ -21,7 +21,12 @@ const interactiveCols = computed(() =>
 </script>
 
 <template>
-  <div v-if="currentPipelineSettings.pipelineType !== PipelineType.Algae">
+  <div
+    v-if="
+      currentPipelineSettings.pipelineType !== PipelineType.Algae &&
+      currentPipelineSettings.pipelineType !== PipelineType.AprilTagAlgae
+    "
+  >
     <pv-select
       v-model="useCameraSettingsStore().currentPipelineSettings.targetModel"
       label="Target Model"
