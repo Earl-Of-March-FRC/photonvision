@@ -5,6 +5,7 @@
 >
 > Current list of additions:
 > - Faster, more robust algae detection and 3D pose calculation (2025)
+> - Ability to use the improved algae detection simultaneously with April Tags
 
 [![Discord](https://img.shields.io/discord/725836368059826228?color=%23738ADB&label=Join%20our%20Discord&logo=discord&logoColor=white)](https://discord.gg/wYxTwym)
 
