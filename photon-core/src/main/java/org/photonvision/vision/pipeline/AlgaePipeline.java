@@ -19,7 +19,6 @@ package org.photonvision.vision.pipeline;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import org.opencv.core.Mat;
@@ -104,7 +103,6 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         UnPadPipe.UnPadParams unPadParams = new UnPadPipe.UnPadParams(settings.padding);
         unPadPipe.setParams(unPadParams);
 
-
         AlgaeDetectionPipe.AlgaeDetectionParams algaeDetectionParams =
                 new AlgaeDetectionPipe.AlgaeDetectionParams(
                         ((Units.inchesToMeters(16.25)) * 1000),
@@ -180,7 +178,8 @@ public class AlgaePipeline extends CVPipeline<CVPipelineResult, AlgaePipelineSet
         List<AlgaeResult> algaeResults = algaeDetectionResult.output;
 
         long currentTimeNanos = System.nanoTime();
-        List<CVShape> algaeShapes = algaeResults.stream().map(AlgaeResult::getShape).collect(Collectors.toList());
+        List<CVShape> algaeShapes =
+                algaeResults.stream().map(AlgaeResult::getShape).collect(Collectors.toList());
 
         List<PotentialTarget> potentialTargets =
                 algaeShapes.stream()
