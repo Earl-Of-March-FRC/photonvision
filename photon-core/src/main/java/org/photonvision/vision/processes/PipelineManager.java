@@ -276,6 +276,11 @@ public class PipelineManager {
                 logger.debug("Creating Algae Pipeline");
                 currentUserPipeline = new AlgaePipeline((AlgaePipelineSettings) desiredPipelineSettings);
             }
+            case AprilTagAlgae -> {
+                logger.debug("Creating AprilTagAlgae Pipeline");
+                currentUserPipeline =
+                        new AprilTagAlgaePipeline((AprilTagAlgaePipelineSettings) desiredPipelineSettings);
+            }
             case Calib3d, DriverMode -> {}
         }
     }
@@ -374,6 +379,12 @@ public class PipelineManager {
                 added.pipelineNickname = nickname;
                 return added;
             }
+            case AprilTagAlgae -> {
+                var added = new AprilTagAlgaePipelineSettings();
+                added.pipelineNickname = nickname;
+                return added;
+            }
+
             case Calib3d, DriverMode -> {
                 logger.error("Got invalid pipeline type: " + type);
                 return null;

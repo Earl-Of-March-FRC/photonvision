@@ -42,7 +42,8 @@ const resetCurrentBuffer = () => {
               <th
                 v-if="
                   currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
-                  currentPipelineSettings.pipelineType === PipelineType.Aruco
+                  currentPipelineSettings.pipelineType === PipelineType.Aruco ||
+                  currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae
                 "
                 class="text-center white--text"
               >
@@ -66,7 +67,8 @@ const resetCurrentBuffer = () => {
               <template
                 v-if="
                   (currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
-                    currentPipelineSettings.pipelineType === PipelineType.Aruco) &&
+                    currentPipelineSettings.pipelineType === PipelineType.Aruco ||
+                    currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae) &&
                   useCameraSettingsStore().currentPipelineSettings.solvePNPEnabled
                 "
               >
@@ -83,11 +85,18 @@ const resetCurrentBuffer = () => {
               <td
                 v-if="
                   currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
-                  currentPipelineSettings.pipelineType === PipelineType.Aruco
+                  currentPipelineSettings.pipelineType === PipelineType.Aruco ||
+                  currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae
                 "
                 class="text-center"
               >
-                {{ target.fiducialId }}
+                {{
+                  currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae
+                    ? target.fiducialId == -1
+                      ? "Algae"
+                      : target.fiducialId
+                    : target.fiducialId
+                }}
               </td>
               <td
                 v-if="currentPipelineSettings.pipelineType === PipelineType.ObjectDetection"
@@ -115,12 +124,19 @@ const resetCurrentBuffer = () => {
               <template
                 v-if="
                   (currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
-                    currentPipelineSettings.pipelineType === PipelineType.Aruco) &&
+                    currentPipelineSettings.pipelineType === PipelineType.Aruco ||
+                    currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae) &&
                   useCameraSettingsStore().currentPipelineSettings.solvePNPEnabled
                 "
               >
                 <td class="text-center">
-                  {{ target.ambiguity >= 0 ? target.ambiguity.toFixed(2) : "(In Multi-Target)" }}
+                  {{
+                    currentPipelineSettings.pipelineType === PipelineType.AprilTagAlgae && target.fiducialId == -1
+                      ? "NA"
+                      : target.ambiguity >= 0
+                        ? target.ambiguity.toFixed(2)
+                        : "(In Multi-Target)"
+                  }}
                 </td>
               </template>
             </tr>
@@ -131,7 +147,8 @@ const resetCurrentBuffer = () => {
     <v-container
       v-if="
         (currentPipelineSettings.pipelineType === PipelineType.AprilTag ||
-          currentPipelineSettings.pipelineType === PipelineType.Aruco) &&
+          currentPipelineSettings.pipelineType === PipelineType.Aruco ||
+          currentPipelineSettings.pipelineType == PipelineType.AprilTagAlgae) &&
         currentPipelineSettings.doMultiTarget &&
         useCameraSettingsStore().isCurrentVideoFormatCalibrated &&
         useCameraSettingsStore().currentPipelineSettings.solvePNPEnabled
