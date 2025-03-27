@@ -19,8 +19,8 @@ package org.photonvision.vision.pipe.impl;
 
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -141,16 +141,18 @@ public class AlgaeDetectionPipe
 
     @Override
     protected List<AlgaeResult> process(List<Contour> in) {
-        Optional<AlgaeResult> result = detector.findLargestAlgae(in);
-        if (result.isPresent()) {
-            Point algaeCenter = result.get().getCenter();
-            double algaeRadius = result.get().getRadius();
+        List<AlgaeResult> allAlgae = detector.findAllAlgae(in);
 
-            int unpaddedX = (int) algaeCenter.x - params.getPadding();
-            int unpaddedY = (int) algaeCenter.y - params.getPadding();
-            return List.of(new AlgaeResult(new Point(unpaddedX, unpaddedY), algaeRadius));
-        }
-        return List.of();
+        return allAlgae.stream()
+                .map(
+                        result -> {
+                            Point algaeCenter = result.getCenter();
+                            double algaeRadius = result.getRadius();
+                            int unpaddedX = (int) algaeCenter.x - params.getPadding();
+                            int unpaddedY = (int) algaeCenter.y - params.getPadding();
+                            return new AlgaeResult(new Point(unpaddedX, unpaddedY), algaeRadius);
+                        })
+                .collect(Collectors.toList()); // Collect into a list and return
     }
 
     public class AlgaeResult {
@@ -225,16 +227,12 @@ public class AlgaeDetectionPipe
             this.maxCircularity = maxCircularity;
         }
 
-        public Optional<AlgaeResult> findLargestAlgae(List<Contour> contoursList) {
+        public List<AlgaeResult> findAllAlgae(List<Contour> contoursList) {
+            List<AlgaeResult> algaeResults = new ArrayList<>();
             List<MatOfPoint> contours =
                     contoursList.stream()
                             .map(contour -> contour.mat) // Extract the MatOfPoint from each Contour
                             .collect(Collectors.toList()); // Collect into a List<MatOfPoint>
-
-            // Variables to store the largest algae
-            Point largestBallCenter = null;
-            double largestArea = 0;
-            double largestRadius = 0;
 
             // Iterate over the contours
             for (MatOfPoint contour : contours) {
@@ -260,21 +258,12 @@ public class AlgaeDetectionPipe
                     double radius = minEnclosingCircle.size.height / 2;
 
                     if (radius > 10) {
-                        // Check if this is the largest algae ball so far
-                        if (area > largestArea) {
-                            largestArea = area;
-                            largestBallCenter = center;
-                            largestRadius = radius;
-                        }
+                        algaeResults.add(new AlgaeResult(center, radius));
                     }
                 }
             }
 
-            if (largestBallCenter == null) {
-                return Optional.empty();
-            }
-
-            return Optional.of(new AlgaeResult(largestBallCenter, largestRadius));
+            return algaeResults;
         }
     }
 
